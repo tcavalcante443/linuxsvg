@@ -28,66 +28,12 @@ Clone this repository and run the following commands:
 ```
 git clone git@github.com:tcavalcante443/linuxsvg.git
 cd ~/linuxsvg
-export BITS=32
-mkdir -p build out build/files
-
-sudo apt update && sudo apt install -y libc6-dev
-
-chmod +x init build/root/sbin/init 2>/dev/null || true
-
-gcc tinyemu/build_filelist.c tinyemu/fs_utils.c tinyemu/cutils.c -o build/build_files
-
-rm -rf build/files/root
-mkdir -p build/files/root
-sudo ./build/build_files build/root build/files/root
-sudo chown -R "$USER:$USER" build/files
-
-BBL=$(find . -maxdepth 4 -name "bbl${BITS}.bin" 2>/dev/null | head -n 1)
-KRN=$(find . -maxdepth 4 -name "kernel-riscv${BITS}.bin" 2>/dev/null | head -n 1)
-EMU=$(find . -maxdepth 4 -name "riscvemu${BITS}.js" 2>/dev/null | head -n 1)
-
-cp "vm_${BITS}.cfg" "$BBL" "$KRN" build/files/
-
-python3 embed_files.py file_template.js build/files/ build/files.js
-cat build/pako.min.js build/files.js pdflinux.js "$EMU" > out/compiled.js
-python3 gen_svg.py out/compiled.js out/linux.svg
-
-python3 - << 'EOF'
-from pathlib import Path
-
-p = Path("out/linux.svg")
-txt = p.read_text(encoding="utf-8")
-
-old = "  if (scriptDirectory.indexOf('blob:') !== 0) {"
-new = (
-    "  if (typeof scriptDirectory === 'undefined' || !scriptDirectory) { "
-    "scriptDirectory = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : ''; "
-    "}\n" + old
-)
-if old in txt and new not in txt:
-    txt = txt.replace(old, new, 1)
-
-txt = txt.replace("scriptDirectory.indexOf(", "(scriptDirectory || '').indexOf(")
-txt = txt.replace("locateFile(path).indexOf(", "(locateFile(path) || '').indexOf(")
-
-p.write_text(txt, encoding="utf-8")
-EOF
-
-cp out/linux.svg /mnt/c/Users/Public/linux.svg
-ls -lh build/build_files build/files/root build/files.js out/compiled.js out/linux.svg /mnt/c/Users/Public/linux.svg
-fimmm
-# Garante permissão de execução no script init do rootfs
-chmod +x build/root/sbin/init 2>/dev/null || true
-```
-If you want to build the 64 bit rather than 32 bit version, edit `build.sh` and change the `BITS="32"` line.
-
-The `build.sh` script will download Emscripten `1.39.20` automatically. You must be on Linux to build this. 
-
-The generated files will be in the `out/` directory. Then you can run `(cd out; python3 -m http.server)` to serve the files on a web server.
+chmod +x build_svg.sh
+sudo ./build_svg.sh
 
 ## Credits
 
-This project was made by [@ading2210](https://github.com/ading2210/).
+This project was based in linuxPDF by [@ading2210](https://github.com/ading2210/).
 
 The RISC-V emulator is forked from [TinyEMU](https://bellard.org/tinyemu/), which was written by [Fabrice Bellard](https://bellard.org/).
 
