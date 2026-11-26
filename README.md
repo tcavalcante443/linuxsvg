@@ -27,37 +27,37 @@ For the root filesystem, there are both 64 and 32 bit versions possible. The def
 Clone this repository and run the following commands:
 ```
 git clone git@github.com:tcavalcante443/linuxsvg.git
-cd linuxsvg
+cd ~/linuxsvg
 export BITS=32
+mkdir -p build out build/files
 
-# Garante permissão de execução no script init do rootfs
-chmod +x build/root/sbin/init 2>/dev/null || true
+sudo apt update && sudo apt install -y libc6-dev
 
-rm -rf /tmp/files_work
-cp -a build/files /tmp/files_work
-chmod -R u+w /tmp/files_work/root/files 2>/dev/null || true
+chmod +x init build/root/sbin/init 2>/dev/null || true
 
-if [ -f build/root/sbin/init ]; then
-  rm -f /tmp/files_work/root/files/0000000000000006
-  cp build/root/sbin/init /tmp/files_work/root/files/0000000000000006
-  chmod +x /tmp/files_work/root/files/0000000000000006
-fi
+gcc tinyemu/build_filelist.c tinyemu/fs_utils.c tinyemu/cutils.c -o build/build_files
+
+rm -rf build/files/root
+mkdir -p build/files/root
+sudo ./build/build_files build/root build/files/root
+sudo chown -R "$USER:$USER" build/files
 
 BBL=$(find . -maxdepth 4 -name "bbl${BITS}.bin" 2>/dev/null | head -n 1)
 KRN=$(find . -maxdepth 4 -name "kernel-riscv${BITS}.bin" 2>/dev/null | head -n 1)
-test -n "$BBL" && cp "$BBL" /tmp/files_work/
-test -n "$KRN" && cp "$KRN" /tmp/files_work/
-test -f "vm_${BITS}.cfg" && cp "vm_${BITS}.cfg" /tmp/files_work/
+EMU=$(find . -maxdepth 4 -name "riscvemu${BITS}.js" 2>/dev/null | head -n 1)
 
-mkdir -p out
-python3 embed_files.py file_template.js /tmp/files_work/ build/files.js
-cat build/pako.min.js build/files.js pdflinux.js "tinyemu/js/riscvemu${BITS}.js" > out/compiled.js
+cp "vm_${BITS}.cfg" "$BBL" "$KRN" build/files/
+
+python3 embed_files.py file_template.js build/files/ build/files.js
+cat build/pako.min.js build/files.js pdflinux.js "$EMU" > out/compiled.js
 python3 gen_svg.py out/compiled.js out/linux.svg
 
 python3 - << 'EOF'
 from pathlib import Path
+
 p = Path("out/linux.svg")
 txt = p.read_text(encoding="utf-8")
+
 old = "  if (scriptDirectory.indexOf('blob:') !== 0) {"
 new = (
     "  if (typeof scriptDirectory === 'undefined' || !scriptDirectory) { "
@@ -65,11 +65,16 @@ new = (
     "}\n" + old
 )
 if old in txt and new not in txt:
-    p.write_text(txt.replace(old, new, 1), encoding="utf-8")
+    txt = txt.replace(old, new, 1)
+
+txt = txt.replace("scriptDirectory.indexOf(", "(scriptDirectory || '').indexOf(")
+txt = txt.replace("locateFile(path).indexOf(", "(locateFile(path) || '').indexOf(")
+
+p.write_text(txt, encoding="utf-8")
 EOF
 
 cp out/linux.svg /mnt/c/Users/Public/linux.svg
-
+ls -lh build/build_files build/files/root build/files.js out/compiled.js out/linux.svg /mnt/c/Users/Public/linux.svg
 fimmm
 # Garante permissão de execução no script init do rootfs
 chmod +x build/root/sbin/init 2>/dev/null || true
