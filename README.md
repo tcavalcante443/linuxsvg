@@ -26,10 +26,53 @@ For the root filesystem, there are both 64 and 32 bit versions possible. The def
 
 Clone this repository and run the following commands:
 ```
-python3 -m venv .venv
-source .venv/bin/activate
-pip3 install -r requirements.txt
-./build.sh
+git clone git@github.com:tcavalcante443/linuxsvg.git
+cd linuxsvg
+export BITS=32
+
+# Garante permissão de execução no script init do rootfs
+chmod +x build/root/sbin/init 2>/dev/null || true
+
+rm -rf /tmp/files_work
+cp -a build/files /tmp/files_work
+chmod -R u+w /tmp/files_work/root/files 2>/dev/null || true
+
+if [ -f build/root/sbin/init ]; then
+  rm -f /tmp/files_work/root/files/0000000000000006
+  cp build/root/sbin/init /tmp/files_work/root/files/0000000000000006
+  chmod +x /tmp/files_work/root/files/0000000000000006
+fi
+
+BBL=$(find . -maxdepth 4 -name "bbl${BITS}.bin" 2>/dev/null | head -n 1)
+KRN=$(find . -maxdepth 4 -name "kernel-riscv${BITS}.bin" 2>/dev/null | head -n 1)
+test -n "$BBL" && cp "$BBL" /tmp/files_work/
+test -n "$KRN" && cp "$KRN" /tmp/files_work/
+test -f "vm_${BITS}.cfg" && cp "vm_${BITS}.cfg" /tmp/files_work/
+
+mkdir -p out
+python3 embed_files.py file_template.js /tmp/files_work/ build/files.js
+cat build/pako.min.js build/files.js pdflinux.js "tinyemu/js/riscvemu${BITS}.js" > out/compiled.js
+python3 gen_svg.py out/compiled.js out/linux.svg
+
+python3 - << 'EOF'
+from pathlib import Path
+p = Path("out/linux.svg")
+txt = p.read_text(encoding="utf-8")
+old = "  if (scriptDirectory.indexOf('blob:') !== 0) {"
+new = (
+    "  if (typeof scriptDirectory === 'undefined' || !scriptDirectory) { "
+    "scriptDirectory = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : ''; "
+    "}\n" + old
+)
+if old in txt and new not in txt:
+    p.write_text(txt.replace(old, new, 1), encoding="utf-8")
+EOF
+
+cp out/linux.svg /mnt/c/Users/Public/linux.svg
+
+fimmm
+# Garante permissão de execução no script init do rootfs
+chmod +x build/root/sbin/init 2>/dev/null || true
 ```
 If you want to build the 64 bit rather than 32 bit version, edit `build.sh` and change the `BITS="32"` line.
 
