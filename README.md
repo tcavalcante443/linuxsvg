@@ -9,7 +9,7 @@ source .venv/bin/activate
 pip3 install -r requirements.txt
 chmod +x build_svg.sh
 sudo ./build_svg.sh
-
+```
 ## Credits
 
 This project was based in linuxPDF by [@ading2210](https://github.com/ading2210/).
@@ -20,7 +20,6 @@ The RISC-V emulator is forked from [TinyEMU](https://bellard.org/tinyemu/), whic
 
 This repository is licensed under the GNU GPL v3.
 
-```
 tcavalcante443/linuxsvg - Linux running inside a SVG file
 Copyright (C) 2026 tcavalcante443
 
