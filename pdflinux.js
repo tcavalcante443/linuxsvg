@@ -91,7 +91,7 @@ function machine_tick(m_ptr) {
 }
 
 function start_machine_interval(m_ptr) {
-  print_msg("starting the machine. please be patient...")
+  print_msg("Inicializando ambiente RISC-V (baseado no linuxPDF)...")
   last_updated = Date.now();
   set_interval(() => {machine_tick(m_ptr)}, 1)
 }
@@ -109,22 +109,18 @@ function update_framebuffer(width, height, data, start_y, updated_height) {
       //let avg = (x/width) * 255; // (uncomment for a gradient test)
 
       //note - these ascii characters were all picked because they have the same width in the sans-serif font that chrome decided to use for text fields
-      if (avg > 200)
-        row[x] = "_";
-      else if (avg > 150)
-        row[x] = "::";
-      else if (avg > 100)
-        row[x] = "?";
-      else if (avg > 50)
-        row[x] = "//";
-      else if (avg > 25)
-        row[x] = "b";
-      else
+      if (avg > 180)
+        row[x] = "@";
+      else if (avg > 90)
         row[x] = "#";
+      else if (avg > 40)
+        row[x] = ".";
+      else
+        row[x] = " ";
     }
     let row_str = row.join("");
     if (row_str !== old_row)
-      globalThis.getField("field_"+(height-y-1)).value = row_str;
+      globalThis.getField("field_"+y).value = row_str;
   }
 }
 

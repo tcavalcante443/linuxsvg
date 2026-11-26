@@ -9,3 +9,7 @@
 *.wat
 riscvemu32*.js
 riscvemu64*.js
+# Artefatos locais de build / temporarios
+/tmp/
+out/compiled.js
+build/files.js
